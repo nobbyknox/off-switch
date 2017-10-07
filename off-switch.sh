@@ -3,13 +3,13 @@
 # Helpful resources:
 # http://tldp.org/HOWTO/Bash-Prog-Intro-HOWTO-6.html#ss6.2
 
-HOST=192.168.10.221
+HOST=""
+TIMEOUT=60
+SCRIPTDIR=""
 SLEEP=5         # time (in seconds) between each heartbeat
 LAST_SEEN=$(date +%s)
 NOW=$(date +%s)
 DIFF_TIME=0
-MAX_UNSEEN=60   # maximum number of elapsed seconds since last seeing
-                # the host before shutdown action(s) will commence
 
 # https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
 # Black        0;30     Dark Gray     1;30
@@ -52,12 +52,57 @@ function log_error {
     log "ERROR" "$1"
 }
 
+function usage {
+    echo "Usage: $0 -h host -t 60 -s scripts_directory"
+}
+
+while getopts h:t:s: option
+do
+    case "${option}" in
+    h) HOST=${OPTARG};;
+    t) TIMEOUT=${OPTARG};;
+    s) SCRIPTDIR=${OPTARG};;
+    [?]) usage
+         exit 1;;
+    esac
+done
+
+log_info "-h: $HOST"
+log_info "-t: $TIMEOUT"
+log_info "-s: $SCRIPTDIR"
+
+if [ "$HOST" = "" ]; then
+    echo Host not specified
+    usage
+    exit 1
+fi
+
+if [ "$TIMEOUT" = "0" ]; then
+    echo Timeout must be greater than zero
+    usage
+    exit 1
+fi
+
+if [ "$SCRIPTDIR" = "" ]; then
+    echo Script directory not specified
+    usage
+    exit 1
+fi
+
 function pingaling {
     ping -c 4 -oq $HOST &> /dev/null
 
     if [ "$?" = "0" ]; then
         LAST_SEEN=$(date +%s)
     fi
+}
+
+function run-scripts {
+    log_info "Running scripts"
+
+    for file in $SCRIPTDIR/*; do
+        [ -f "$file" ] && [ -x "$file" ] && "$file"
+    done
 }
 
 while true; do
@@ -72,6 +117,7 @@ while true; do
             log_warn "Host last seen $DIFF_TIME seconds ago. Gearing up to swith stuff off..."
         else
             log_error "Host last seen $DIFF_TIME seconds ago. Shutting down NOW!"
+            run-scripts
             exit 0
         fi
     fi
