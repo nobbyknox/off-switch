@@ -53,7 +53,7 @@ function log_error {
 }
 
 function log_void {
-    echo "$1" /dev/null
+    echo "$1" > /dev/null
 }
 
 function usage {
