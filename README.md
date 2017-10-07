@@ -22,3 +22,5 @@ Arguments:
 -s      Directory containing scripts to execute once the timeout occurs
         and the host was not reachable.
 ```
+
+An `init.d` script has also been provided to run the script on a Raspberry PI.
