@@ -52,6 +52,10 @@ function log_error {
     log "ERROR" "$1"
 }
 
+function log_void {
+    # Erm, okay. I will not log anyting.
+}
+
 function usage {
     echo "Usage: $0 -h host -t 60 -s scripts_directory"
 }
@@ -98,7 +102,7 @@ function pingaling {
 }
 
 function run-scripts {
-    log_info "Running scripts"
+    log_info "Running scripts..."
 
     for file in $SCRIPTDIR/*; do
         [ -f "$file" ] && [ -x "$file" ] && "$file"
@@ -110,10 +114,10 @@ while true; do
     NOW=$(date +%s)
     DIFF_TIME=$((NOW - LAST_SEEN))
 
-    if [ $DIFF_TIME -le 10 ]; then
+    if [ $DIFF_TIME -le 15 ]; then
         log_info "Host last seen $DIFF_TIME seconds ago"
     else
-        if [ $DIFF_TIME -le 30 ]; then
+        if [ $DIFF_TIME -le $TIMEOUT ]; then
             log_warn "Host last seen $DIFF_TIME seconds ago. Gearing up to swith stuff off..."
         else
             log_error "Host last seen $DIFF_TIME seconds ago. Shutting down NOW!"
