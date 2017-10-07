@@ -116,7 +116,7 @@ while true; do
     DIFF_TIME=$((NOW - LAST_SEEN))
 
     if [ $DIFF_TIME -le 15 ]; then
-        log_info "Host last seen $DIFF_TIME seconds ago"
+        log_void "Host last seen $DIFF_TIME seconds ago"
     else
         if [ $DIFF_TIME -lt $TIMEOUT ]; then
             log_warn "Host last seen $DIFF_TIME seconds ago. Gearing up to swith stuff off..."
