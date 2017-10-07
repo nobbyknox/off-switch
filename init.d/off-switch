@@ -1,0 +1,56 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          off-switch
+# Required-Start:    $all
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Turns off QNAP on power failure
+### END INIT INFO
+
+# Source function library.
+. /lib/lsb/init-functions
+
+NAME=off-switch
+DAEMON=/home/pi/off-switch/off-switch.sh
+OFF_OPTS="-h 192.168.10.221 -t 60 -s /home/pi/off-switch/scripts"
+PIDFILE=/var/run/off-switch.pid
+
+test -x $DAEMON || exit 5
+
+start() {
+    # code to start app comes here
+    # example: daemon program_name &
+
+    $DAEMON $OFF_OPTS >> /home/pi/off-switch/off-switch.log &
+    echo "$!" > $PIDFILE
+}
+
+stop() {
+    # code to stop app comes here
+    # example: killproc program_name
+    killproc -p $PIDFILE $DAEMON
+    rm -f $PIDFILE
+}
+
+case "$1" in
+    start)
+       start
+       ;;
+    stop)
+       stop
+       ;;
+    restart)
+       stop
+       start
+       ;;
+    status)
+       # code to check status of app comes here
+       # example: status program_name
+       status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+       ;;
+    *)
+       echo "Usage: $0 {start|stop|status|restart}"
+esac
+
+exit 0
