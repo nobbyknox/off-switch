@@ -94,7 +94,7 @@ if [ "$SCRIPTDIR" = "" ]; then
 fi
 
 function pingaling {
-    ping -c 4 -oq $HOST &> /dev/null
+    ping -c 4 $HOST &> /dev/null
 
     if [ "$?" = "0" ]; then
         LAST_SEEN=$(date +%s)
