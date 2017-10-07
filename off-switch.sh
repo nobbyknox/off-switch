@@ -111,13 +111,14 @@ function run-scripts {
 
 while true; do
     pingaling
+
     NOW=$(date +%s)
     DIFF_TIME=$((NOW - LAST_SEEN))
 
     if [ $DIFF_TIME -le 15 ]; then
         log_info "Host last seen $DIFF_TIME seconds ago"
     else
-        if [ $DIFF_TIME -le $TIMEOUT ]; then
+        if [ $DIFF_TIME -lt $TIMEOUT ]; then
             log_warn "Host last seen $DIFF_TIME seconds ago. Gearing up to swith stuff off..."
         else
             log_error "Host last seen $DIFF_TIME seconds ago. Shutting down NOW!"
