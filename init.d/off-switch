@@ -21,7 +21,6 @@ test -x $DAEMON || exit 5
 start() {
     # code to start app comes here
     # example: daemon program_name &
-
     $DAEMON $OFF_OPTS >> /home/pi/off-switch/off-switch.log &
     echo "$!" > $PIDFILE
 }
