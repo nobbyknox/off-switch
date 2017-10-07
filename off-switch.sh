@@ -123,6 +123,7 @@ while true; do
         else
             log_error "Host last seen $DIFF_TIME seconds ago. Shutting down NOW!"
             run-scripts
+            log_info "Exiting..."
             exit 0
         fi
     fi
