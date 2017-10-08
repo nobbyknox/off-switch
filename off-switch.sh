@@ -71,9 +71,10 @@ do
     esac
 done
 
-log_info "-h: $HOST"
-log_info "-t: $TIMEOUT"
-log_info "-s: $SCRIPTDIR"
+log_info "off-switch ready"
+log_info "  -h: $HOST"
+log_info "  -t: $TIMEOUT"
+log_info "  -s: $SCRIPTDIR"
 
 if [ "$HOST" = "" ]; then
     echo Host not specified
