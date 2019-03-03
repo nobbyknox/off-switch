@@ -5,11 +5,13 @@
 
 HOST=""
 TIMEOUT=60
-SCRIPTDIR=""
-SLEEP=5         # time (in seconds) between each heartbeat
-LAST_SEEN=$(date +%s)
+SCRIPT_DIR=""
+STARTUP_DELAY=120 # two minutes
+SLEEP=5           # time (in seconds) between each heartbeat
+LAST_SEEN=""
 NOW=$(date +%s)
 DIFF_TIME=0
+INITIALIZED=0
 
 # https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
 # Black        0;30     Dark Gray     1;30
@@ -27,17 +29,19 @@ ORANGE='\033[0;33m'
 NC='\033[0m' # No Color
 
 function log {
-    if [ "$1" = "INFO" ]; then
+    TYPE=""
+
+    if [[ "$1" = "INFO" ]]; then
         TYPE="${GREEN}$1${NC}"
     else
-        if [ "$1" = "WARN" ]; then
+        if [[ "$1" = "WARN" ]]; then
             TYPE="${ORANGE}$1${NC}"
         else
             TYPE="${RED}$1${NC}"
         fi
     fi
 
-    echo -e $(date '+%Y-%m-%d %H:%M:%S') [$TYPE] $2
+    echo -e $(date '+%Y-%m-%d %H:%M:%S') \[${TYPE}\] $2
 }
 
 function log_info {
@@ -65,7 +69,7 @@ do
     case "${option}" in
     h) HOST=${OPTARG};;
     t) TIMEOUT=${OPTARG};;
-    s) SCRIPTDIR=${OPTARG};;
+    s) SCRIPT_DIR=${OPTARG};;
     [?]) usage
          exit 1;;
     esac
@@ -74,30 +78,30 @@ done
 log_info "off-switch ready"
 log_info "  -h: $HOST"
 log_info "  -t: $TIMEOUT"
-log_info "  -s: $SCRIPTDIR"
+log_info "  -s: $SCRIPT_DIR"
 
-if [ "$HOST" = "" ]; then
+if [[ "$HOST" = "" ]]; then
     echo Host not specified
     usage
     exit 1
 fi
 
-if [ "$TIMEOUT" = "0" ]; then
+if [[ "$TIMEOUT" = "0" ]]; then
     echo Timeout must be greater than zero
     usage
     exit 1
 fi
 
-if [ "$SCRIPTDIR" = "" ]; then
+if [[ "$SCRIPT_DIR" = "" ]]; then
     echo Script directory not specified
     usage
     exit 1
 fi
 
 function pingaling {
-    ping -c 1 $HOST &> /dev/null
+    ping -c 1 ${HOST} &> /dev/null
 
-    if [ "$?" = "0" ]; then
+    if [[ "$?" = "0" ]]; then
         LAST_SEEN=$(date +%s)
     fi
 }
@@ -105,29 +109,41 @@ function pingaling {
 function run-scripts {
     log_info "Running scripts..."
 
-    for file in $SCRIPTDIR/*; do
-        [ -f "$file" ] && [ -x "$file" ] && "$file"
+    for file in ${SCRIPT_DIR}/*; do
+        [[ -f "$file" ]] && [[ -x "$file" ]] && "$file"
     done
 }
 
+# Raspberry Pi time at start-up is somewhat broken. Allow
+# clock to be set before we kick off.
+log_info "Entering start-up sleep delay of $STARTUP_DELAY seconds"
+sleep ${STARTUP_DELAY}
+
+log_info "Start-up delay complete"
+LAST_SEEN=$(date +%s)
+INITIALIZED=1
+
 while true; do
-    pingaling
 
-    NOW=$(date +%s)
-    DIFF_TIME=$((NOW - LAST_SEEN))
+    if [[ "$INITIALIZED" = "1" ]]; then
+        pingaling
 
-    if [ $DIFF_TIME -le 15 ]; then
-        log_void "Host last seen $DIFF_TIME seconds ago"
-    else
-        if [ $DIFF_TIME -lt $TIMEOUT ]; then
-            log_warn "Host last seen $DIFF_TIME seconds ago. Gearing up to swith stuff off..."
+        NOW=$(date +%s)
+        DIFF_TIME=$((NOW - LAST_SEEN))
+
+        if [[ ${DIFF_TIME} -le 15 ]]; then
+            log_void "Host last seen $DIFF_TIME seconds ago"
         else
-            log_error "Host last seen $DIFF_TIME seconds ago. Shutting down NOW!"
-            run-scripts
-            log_info "Exiting..."
-            exit 0
+            if [[ ${DIFF_TIME} -lt ${TIMEOUT} ]]; then
+                log_warn "Host last seen $DIFF_TIME seconds ago. Gearing up to swith stuff off..."
+            else
+                log_error "Host last seen $DIFF_TIME seconds ago. Shutting down NOW!"
+                run-scripts
+                log_info "Exiting..."
+                exit 0
+            fi
         fi
     fi
 
-    sleep $SLEEP
+    sleep ${SLEEP}
 done
